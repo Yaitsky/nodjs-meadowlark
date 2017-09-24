@@ -1,15 +1,18 @@
 const express = require('express');
 const app = express();
 const handlebars = require('express-handlebars')
-  .create({ defaultLayout: 'main'});
+  .create({ 
+    defaultLayout: 'main',
+    helpers: {
+      section: function(name, options){
+        if(!this._sections) this._sections = {};
+        this._sections[name] = options.fn(this);
+        return null;
+      }
+    }
+  });
 
-const companies = [
-  'apple',
-  'youtube',
-  'google',
-  'yandex',
-  'paypal'
-];
+const company = require('./lib/companies.js');
 
 app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
@@ -18,13 +21,33 @@ app.set('port', process.env.PORT || 3000);
 
 app.use(express.static(__dirname + '/public'));
 
+app.use((req, res, next) => {
+  res.locals.showTests = app.get('env') !== 'production' &&
+    req.query.test === '1';
+    next();
+});
+
 app.get('/', (req, res) => {
   res.render('home');
 });
 
 app.get('/about', (req, res) => {
-  let company = companies[Math.floor(Math.random() * companies.length)];
-  res.render('about', { company });
+  res.render('about', { 
+    company: company.getCompany(),
+    pageTestScript: '/qa/tests-about.js'
+  });
+});
+
+app.get('/tours/hood-river', (req, res) => {
+  res.render('tours/hood-river');
+});
+
+app.get('/tours/oregon-coast', (req, res) => {
+	res.render('tours/oregon-coast');
+});
+
+app.get('/tours/request-group-rate', (req, res) => {
+  res.render('tours/request-group-rate');
 });
 
 app.use((req,res, next) => {
